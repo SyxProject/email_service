@@ -1,36 +1,36 @@
+const nodemailer = require('nodemailer')
+const formatDate = require('../utils/formatDate')
 
-import nodemailer from "nodemailer";
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+})
 
 class EmailService {
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.NOTIFY_EMAIL_USER,
-        pass: process.env.NOTIFY_EMAIL_PASS
-      }
-    });
-  }
+  static async send({ to, userName, reportName, generatedAt }) {
+    const date = formatDate(generatedAt)
 
-  buildHtml({ username, reportName, generatedAt }) {
-    return `
-      <h1>Nuevo Reporte Generado</h1>
-      <p>Usuario: <strong>${username}</strong></p>
-      <p>Reporte: <strong>${reportName}</strong></p>
-      <p>Fecha: ${generatedAt}</p>
-    `;
-  }
+    const subject =
+      `SYX | Reporte Generado | ${date.slice(0, 10)}`
 
-  async sendNotification({ to, username, reportName, generatedAt }) {
-    const html = this.buildHtml({ username, reportName, generatedAt });
+    const text = `
+Reporte generado por: ${userName}
+Nombre del reporte: ${reportName}
+Fecha de generación: ${date}
+    `.trim()
 
-    await this.transporter.sendMail({
-      from: process.env.NOTIFY_EMAIL_USER,
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
       to,
-      subject: `Reporte generado: ${reportName}`,
-      html
-    });
+      subject,
+      text
+    })
+
+    console.log("Correo enviado a:", to)
   }
 }
 
-export default new EmailService();
+module.exports = EmailService
