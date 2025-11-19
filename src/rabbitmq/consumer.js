@@ -8,17 +8,18 @@ async function consume() {
   const exchange = "email_events";
 
   await channel.assertExchange(exchange, "fanout", {
-    durable: false
+    // Hacemos durable el exchange para que sobreviva reinicios si se requiere
+    durable: true
   });
 
-  // Cola efímera nombrada `email_queue`
+  // Cola nombrada `email_queue` permanente (la cola permanece en broker)
   // - `exclusive: false` -> permite múltiples consumidores conectados
-  // - `autoDelete: true` -> la cola se borra cuando ya no tenga consumidores
-  // - `durable: false` -> no persiste en el broker (efímera)
+  // - `autoDelete: false` -> la cola NO se borra automáticamente
+  // - `durable: true` -> la cola persiste en el broker
   const q = await channel.assertQueue("email_queue", {
     exclusive: false,
-    autoDelete: true,
-    durable: false
+    autoDelete: false,
+    durable: true
   });
 
   await channel.bindQueue(q.queue, exchange, "");
