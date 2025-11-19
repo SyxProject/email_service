@@ -1,5 +1,4 @@
-const nodemailer = require('nodemailer')
-const formatDate = require('../utils/formatDate')
+const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -7,30 +6,31 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   }
-})
+});
 
 class EmailService {
-  static async send({ to, userName, reportName, generatedAt }) {
-    const date = formatDate(generatedAt)
+  static async sendReportEmail({ to, userName, reportName, generatedAt }) {
+    const date = new Date(generatedAt).toLocaleString("es-CO", {
+      timeZone: "America/Bogota"
+    });
 
-    const subject =
-      `SYX | Reporte Generado | ${date.slice(0, 10)}`
+    const subject = `SYX | ${reportName}`;
 
     const text = `
 Reporte generado por: ${userName}
 Nombre del reporte: ${reportName}
 Fecha de generación: ${date}
-    `.trim()
+`.trim();
 
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to,
       subject,
       text
-    })
+    });
 
-    console.log("Correo enviado a:", to)
+    console.log("Correo enviado:", to);
   }
 }
 
-module.exports = EmailService
+module.exports = EmailService;

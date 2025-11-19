@@ -1,28 +1,40 @@
-const amqp = require('amqplib')
-const EmailService = require('../services/email.service')
+const amqp = require("amqplib");
+const EmailService = require("../services/email.service");
 
 async function consume() {
-  const conn = await amqp.connect(process.env.RABBITMQ_URL + "?heartbeat=30")
-  const channel = await conn.createChannel()
-  const queue = 'email-queue'
+  const conn = await amqp.connect(process.env.RABBITMQ_URL + "?heartbeat=30");
+  const channel = await conn.createChannel();
 
-  await channel.assertQueue(queue, { durable: true })
-  console.log("Escuchando cola:", queue)
+  const exchange = "email_events";
 
-  channel.consume(queue, async msg => {
-    if (!msg) return
+  await channel.assertExchange(exchange, "fanout", {
+    durable: false
+  });
 
-    const data = JSON.parse(msg.content.toString())
-    console.log("Evento recibido:", data)
+  // Cola efímera y única por instancia
+  const q = await channel.assertQueue("", {
+    exclusive: true,
+    autoDelete: true
+  });
+
+  channel.bindQueue(q.queue, exchange, "");
+
+  console.log("EmailService escuchando exchange:", exchange);
+
+  channel.consume(q.queue, async msg => {
+    if (!msg) return;
+
+    const data = JSON.parse(msg.content.toString());
+    console.log("Evento recibido:", data);
 
     try {
-      await EmailService.send(data)
-      channel.ack(msg)
+      await EmailService.sendReportEmail(data);
+      channel.ack(msg);
     } catch (err) {
-      console.error("Error enviando correo:", err)
-      channel.nack(msg, false, false) // descartar el mensaje si falla
+      console.error("Error enviando correo:", err);
+      channel.nack(msg, false, false);
     }
-  })
+  });
 }
 
-module.exports = consume
+module.exports = consume;
