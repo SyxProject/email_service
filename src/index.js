@@ -9,5 +9,4 @@ consume()
 
 app.listen(port, () => {
   console.log(`Event Service escuchando en puerto ${port}`)
-  startConsumer().catch(console.error)
 })
