@@ -11,15 +11,19 @@ async function consume() {
     durable: false
   });
 
-  // Cola efímera y única por instancia
-  const q = await channel.assertQueue("", {
-    exclusive: true,
-    autoDelete: true
+  // Cola efímera nombrada `email_queue`
+  // - `exclusive: false` -> permite múltiples consumidores conectados
+  // - `autoDelete: true` -> la cola se borra cuando ya no tenga consumidores
+  // - `durable: false` -> no persiste en el broker (efímera)
+  const q = await channel.assertQueue("email_queue", {
+    exclusive: false,
+    autoDelete: true,
+    durable: false
   });
 
-  channel.bindQueue(q.queue, exchange, "");
+  await channel.bindQueue(q.queue, exchange, "");
 
-  console.log("EmailService escuchando exchange:", exchange);
+  console.log("EmailService escuchando exchange:", exchange, "queue:", q.queue);
 
   channel.consume(q.queue, async msg => {
     if (!msg) return;
